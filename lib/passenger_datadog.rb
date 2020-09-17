@@ -16,7 +16,9 @@ class PassengerDatadog
     # Good job Passenger 4.0.10. Return non xml in your xml output.
     status = status.split("\n")[3..-1].join("\n") unless status.start_with?('<?xml')
 
-    statsd = Datadog::Statsd.new
+    @host = ENV["DD_AGENT_HOST"] || "127.0.0.1"
+    @port = ENV["DD_METRIC_AGENT_PORT"] || 8125
+    statsd = Datadog::Statsd.new @host.to_s, @port
     parsed = Nokogiri::XML(status)
 
     statsd.batch do |batch|
@@ -29,9 +31,8 @@ class PassengerDatadog
   def run_in_batch(batch, parsed)
     Parsers::Root.new(batch, parsed.xpath('//info')).run
 
-    multiple_supergroups = parsed.xpath('//supergroups/supergroup').count > 1
     parsed.xpath('//supergroups/supergroup').each do |supergroup|
-      prefix = multiple_supergroups ? normalize_prefix(supergroup.xpath('name').text) : nil
+      prefix = normalize_prefix(supergroup.xpath('name').text)
       Parsers::Group.new(batch, supergroup.xpath('group'), prefix: prefix).run
 
       supergroup.xpath('group/processes/process').each_with_index do |process, index|
