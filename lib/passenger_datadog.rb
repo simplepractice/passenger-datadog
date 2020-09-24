@@ -34,7 +34,7 @@ class PassengerDatadog
     multiple_supergroups = parsed.xpath('//supergroups/supergroup').count > 1
     use_prefix = ENV["DD_PASSENGER_PREFIX"]
     parsed.xpath('//supergroups/supergroup').each do |supergroup|
-      prefix = multiple_supergroups || use_prefix ? normalize_prefix(supergroup.xpath('name').text) : nil
+      prefix = (multiple_supergroups || use_prefix) ? normalize_prefix(supergroup.xpath('name').text) : nil
       Parsers::Group.new(batch, supergroup.xpath('group'), prefix: prefix).run
 
       supergroup.xpath('group/processes/process').each_with_index do |process, index|
